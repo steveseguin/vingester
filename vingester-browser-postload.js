@@ -1,6 +1,6 @@
 /*
 **  Vingester ~ Ingest Web Contents as Video Streams
-**  Copyright (c) 2021-2022 Dr. Ralf S. Engelschall <rse@engelschall.com>
+**  Copyright (c) 2021-2025 Dr. Ralf S. Engelschall <rse@engelschall.com>
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
@@ -246,24 +246,24 @@
             const observer = new MutationObserver((mutationsList, observer) => {
                 for (const mutation of mutationsList) {
                     if (mutation.type === "childList") {
-                        for (const node of mutation.addedNodes)
+                        for (const node of mutation.addedNodes) {
                             if (node instanceof HTMLMediaElement)
                                 attach("mutation", node)
-                            else if (node.children && node.children.length){
+                            else if (node.children && node.children.length) {
                                 const els = node.querySelectorAll("audio, video")
-                                for (const el of els){
+                                for (const el of els)
                                     attach("mutation", el)
-                                }
                             }
-                        for (const node of mutation.removedNodes)
+                        }
+                        for (const node of mutation.removedNodes) {
                             if (node instanceof HTMLMediaElement)
                                 detach("mutation", node)
-							else if (node.children && node.children.length){
+                            else if (node.children && node.children.length) {
                                 const els = node.querySelectorAll("audio, video")
-                                for (const el of els){
+                                for (const el of els)
                                     detach("mutation", el)
-                                }
                             }
+                        }
                     }
                 }
             })
