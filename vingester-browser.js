@@ -638,7 +638,11 @@ module.exports = class Browser {
                 this.starting = false
                 resolve(true)
             })
-            content.loadURL(this.cfg.u)
+            /*  identify this app when loading a YouTube embedded player directly  */
+            if (/^https:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/embed\//i.test(this.cfg.u))
+                content.loadURL(this.cfg.u, { httpReferrer: "https://com.engelschall.apps.vingester/" })
+            else
+                content.loadURL(this.cfg.u)
         })
     }
 

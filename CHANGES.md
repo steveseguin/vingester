@@ -6,6 +6,9 @@ The following is a detailed list of all changes to **Vingester** in
 reverse chronological order (newer first), grouped by the release
 versions and prefixed with the kind of change.
 
+- 2.9.1
+    - BUGFIX: supply app identification for direct YouTube embedded-player links to avoid Error 153
+
 - 2.9.0
     - UPGRADE: upgrade to Electron 44.5.1 and Chromium 152
     - BUGFIX: restore audio capture, NDI output, previews, and status reporting with current Electron

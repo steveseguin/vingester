@@ -18,6 +18,7 @@ Get started on Windows
 4. Select its title as the NDI source in your receiving application. Add another browser for each additional feed.
 
 For YouTube, use the video's normal watch link, including the full link for an unlisted stream.
+For a player-only view, use `https://www.youtube.com/embed/VIDEO_ID?autoplay=1`; if the uploader disables embedding, use the watch link.
 For VDO.Ninja, use the viewing link for each feed.
 Get updates for this fork from the Releases page; the built-in updater uses the upstream releases.
 
