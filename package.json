@@ -1,7 +1,7 @@
 {
     "name": "Vingester",
     "homepage": "https://vingester.app",
-    "version": "2.8.1",
+    "version": "2.9.0",
     "description": "Ingest Web Contents as Video Streams",
     "author": {
         "name": "Dr. Ralf S. Engelschall",
@@ -22,8 +22,8 @@
     "devDependencies": {
         "cross-env": "7.0.3",
         "cross-zip": "4.0.0",
-        "electron": "24.0.0",
-        "electron-builder": "^23.6.0",
+        "electron": "44.5.1",
+        "electron-builder": "26.15.3",
         "electron-notarize": "^1.2.1",
         "eslint": "8.38.0",
         "eslint-config-standard": "17.0.0",
@@ -35,7 +35,7 @@
         "npm-run-all": "4.1.5",
         "patch-package": "6.5.1",
         "prompt-password": "1.2.0",
-        "shell": "0.9.4",
+        "shelljs": "0.8.5",
         "stylelint": "15.4.0",
         "stylelint-config-standard": "32.0.0"
     },
@@ -53,14 +53,14 @@
         "electron-context-menu": "3.6.1",
         "electron-log": "4.4.8",
         "electron-store": "8.1.0",
-        "execa": "7.1.1",
-        "got": "12.6.0",
+        "execa": "5.1.1",
+        "got": "11.8.6",
         "grandiose": "rse/grandiose#cf09bb84",
         "hapi": "18.1.0",
         "hapi-plugin-header": "1.1.8",
         "js-yaml": "4.1.0",
         "less": "4.1.3",
-        "mkdirp": "3.0.0",
+        "mkdirp": "1.0.4",
         "moment": "2.29.4",
         "pcm-convert": "1.6.5",
         "pure-uuid": "1.6.3",
@@ -73,10 +73,12 @@
         "vue-next-select": "2.10.5",
         "vue-tippy": "6.0.0",
         "vue3-perfect-scrollbar": "1.6.1",
-        "which": "3.0.0",
-        "yarn": "^1.22.19"
+        "which": "3.0.0"
     },
     "main": "vingester-main.js",
+    "engines": {
+        "node": ">=22.12.0"
+    },
     "upd": [
         "!execa",
         "!got",
@@ -92,6 +94,8 @@
             "node_modules/@discordjs/opus/**"
         ],
         "removePackageScripts": true,
+        "nativeRebuilder": "sequential",
+        "buildDependenciesFromSource": true,
         "compression": "normal",
         "directories": {
             "output": "dist"

@@ -1,16 +1,25 @@
 
-note: This is fork of Vingester, designed to address some bugs in the current official version. This forked version will not be updated frequently, so security patches will most certainly not be up to date.
-
-If using VDO.Ninja, v21 or older should mostly work with the official version of Vingester, but v22 and later may not.  
-
-I've gotten this patched version of Vingester to work on Windows PC, but I've not managed to get a build for macOS, so if using mac, you may need to use https://vdo.ninja/v21/ with the offical version in the meanwhile.
-
 <img src="https://raw.githubusercontent.com/rse/vingester/master/vingester-icon.png" width="150" align="right" alt=""/>
 
 [Vingester](https://vingester.app)
 ==================================
 
 **Ingest Web Contents as Video Streams**
+
+Run web pages as video sources for Resolume, OBS Studio, and other NDI receivers.
+This fork provides updated Windows builds of [Vingester](https://github.com/rse/vingester).
+
+Get started on Windows
+----------------------
+
+1. Download the Windows executable from [Releases](https://github.com/steveseguin/vingester/releases/latest) and run it. Windows 10 or later, 64-bit, is required.
+2. Add a browser, give it a unique title, and paste your page's URL into **Input URL**.
+3. Enable **Headless** and **NDI**, choose the resolution, frame rate, and audio channels, then start the browser.
+4. Select its title as the NDI source in your receiving application. Add another browser for each additional feed.
+
+For YouTube, use the video's normal watch link, including the full link for an unlisted stream.
+For VDO.Ninja, use the viewing link for each feed.
+Get updates for this fork from the Releases page; the built-in updater uses the upstream releases.
 
 About
 -----
@@ -40,4 +49,3 @@ Copyright & License
 
 Copyright &copy; 2021-2022 [Dr. Ralf S. Engelschall](mailto:rse@engelschall.com)<br/>
 Licensed under [GPL 3.0](https://spdx.org/licenses/GPL-3.0-only)
-

@@ -1,0 +1,66 @@
+diff --git a/node_modules/electron-context-menu/index.js b/node_modules/electron-context-menu/index.js
+index 685277d..0ba6a7c 100644
+--- a/node_modules/electron-context-menu/index.js
++++ b/node_modules/electron-context-menu/index.js
+@@ -4,6 +4,11 @@ const cliTruncate = require('cli-truncate');
+ const {download} = require('electron-dl');
+ const isDev = require('electron-is-dev');
+ 
++const writeBookmark = (title, url) => electron.clipboard.write([new electron.ClipboardItem({
++	'text/plain': url,
++	'electron application/bookmark': {title, url}
++})]);
++
+ const webContents = win => win.webContents || (win.id && win);
+ 
+ const decorateMenuItem = menuItem => {
+@@ -107,11 +112,11 @@ const create = (win, options) => {
+ 				label: '&Paste',
+ 				enabled: editFlags.canPaste,
+ 				visible: props.isEditable,
+-				click(menuItem) {
++				async click(menuItem) {
+ 					const target = webContents(win);
+ 
+ 					if (menuItem.transform) {
+-						let clipboardContent = electron.clipboard.readText(props.selectionText);
++						let clipboardContent = await electron.clipboard.readText();
+ 						clipboardContent = menuItem.transform ? menuItem.transform(clipboardContent) : clipboardContent;
+ 						target.insertText(clipboardContent);
+ 					} else {
+@@ -169,10 +174,7 @@ const create = (win, options) => {
+ 				click(menuItem) {
+ 					props.linkURL = menuItem.transform ? menuItem.transform(props.linkURL) : props.linkURL;
+ 
+-					electron.clipboard.write({
+-						bookmark: props.linkText,
+-						text: props.linkURL
+-					});
++					writeBookmark(props.linkText, props.linkURL);
+ 				}
+ 			}),
+ 			saveLinkAs: decorateMenuItem({
+@@ -199,10 +201,7 @@ const create = (win, options) => {
+ 				click(menuItem) {
+ 					props.srcURL = menuItem.transform ? menuItem.transform(props.srcURL) : props.srcURL;
+ 
+-					electron.clipboard.write({
+-						bookmark: props.srcURL,
+-						text: props.srcURL
+-					});
++					writeBookmark(props.srcURL, props.srcURL);
+ 				}
+ 			}),
+ 			copyVideoAddress: decorateMenuItem({
+@@ -212,10 +211,7 @@ const create = (win, options) => {
+ 				click(menuItem) {
+ 					props.srcURL = menuItem.transform ? menuItem.transform(props.srcURL) : props.srcURL;
+ 
+-					electron.clipboard.write({
+-						bookmark: props.srcURL,
+-						text: props.srcURL
+-					});
++					writeBookmark(props.srcURL, props.srcURL);
+ 				}
+ 			}),
+ 			inspect: () => ({

@@ -8,7 +8,7 @@
 const os          = require("os")
 const fs          = require("fs")
 const path        = require("path")
-const rimraf      = require("rimraf")
+const { rimraf }  = require("rimraf")
 
 /*  require external modules  */
 const electron    = require("electron")
@@ -197,14 +197,8 @@ module.exports = class Browser {
         }
 
         /*  receive worker browser console outputs  */
-        worker.webContents.on("console-message", (ev, level, message, line, sourceId) => {
-            let method = "debug"
-            switch (level) {
-                case 0: method = "debug"; break
-                case 1: method = "info";  break
-                case 2: method = "warn";  break
-                case 3: method = "error"; break
-            }
+        worker.webContents.on("console-message", ({ level, message }) => {
+            const method = level === "warning" ? "warn" : level
             this.log[method](`browser/worker-${this.id}: console: ${message.replace(/\s+/g, " ")}`)
         })
 
@@ -267,6 +261,9 @@ module.exports = class Browser {
         /*  receive worker information  */
         let tallyLast = ""
         worker.webContents.on("ipc-message", (ev, channel, msg) => {
+            if ([ "tally", "message", "capture", "burst", "rate" ].includes(channel)
+                && this.control !== null && !this.control.isDestroyed())
+                this.control.webContents.send(channel, msg)
             if (channel === "tally") {
                 /*  receive tally status  */
                 this.tally = msg.status
@@ -405,6 +402,22 @@ module.exports = class Browser {
         if (os.platform() === "darwin")
             content.setWindowButtonVisibility(false)
 
+        /*  route content messages only to this browser's worker and control UI  */
+        content.webContents.on("ipc-message", (ev, channel, data) => {
+            if (ev.senderFrame !== content.webContents.mainFrame)
+                return
+            if (channel === "audio-capture" && data instanceof Uint8Array) {
+                if (!worker.isDestroyed())
+                    worker.webContents.send("audio-capture", data)
+            }
+            else if (channel === "stat" && data && typeof data === "object") {
+                if (this.control !== null && !this.control.isDestroyed())
+                    this.control.webContents.send("stat", { ...data, id: this.id })
+            }
+            else if (channel === "content-log" && Array.isArray(data))
+                this.log.info(`browser/content-${this.id}:`, ...data)
+        })
+
         /*  support devTools  */
         if (this.cfg.E) {
             this.log.info("browser: open")
@@ -501,20 +514,18 @@ module.exports = class Browser {
         }
 
         /*  receive content browser console outputs  */
-        content.webContents.on("console-message", (ev, level, message, line, sourceId) => {
+        content.webContents.on("console-message", ({ level, message }) => {
             /*  log centrally  */
-            let method = "debug"
-            switch (level) {
-                case 0: method = "debug"; break
-                case 1: method = "info";  break
-                case 2: method = "warn";  break
-                case 3: method = "error"; break
-            }
+            const method = level === "warning" ? "warn" : level
             this.log[method](`browser/content-${this.id}: console: ${message.replace(/\s+/g, " ")}`)
 
             /*  optionally send to control user interface  */
             if (this.control !== null && !this.control.isDestroyed())
-                this.control.webContents.send("trace", { level, message, id: this.id })
+                this.control.webContents.send("trace", {
+                    level: [ "debug", "info", "warning", "error" ].indexOf(level),
+                    message,
+                    id: this.id
+                })
         })
 
         /*  ignore any interactions on worker and content browser windows  */
@@ -732,11 +743,15 @@ module.exports = class Browser {
 
         /*  notify worker and wait until its processVideo/processAudio
             callbacks were at least done one last time  */
-        this.worker.webContents.send("browser-worker-stop")
         await new Promise((resolve) => {
-            electron.ipcMain.on("browser-worker-stopped", () => {
+            const stopped = (ev, channel) => {
+                if (channel !== "browser-worker-stopped")
+                    return
+                this.worker.webContents.off("ipc-message", stopped)
                 resolve()
-            })
+            }
+            this.worker.webContents.on("ipc-message", stopped)
+            this.worker.webContents.send("browser-worker-stop")
         })
 
         /*  remove all listeners  */
@@ -776,15 +791,9 @@ module.exports = class Browser {
         await session.clearAuthCache()
         await session.clearHostResolverCache()
         await session.clearStorageData()
-        await new Promise((resolve, reject) => {
-            const p = path.join(electron.app.getPath("userData"), "Partitions", name)
-            this.log.info(`browser: clearing session persistance area: "${p}"`)
-            rimraf(p, { disableGlob: true }, (err) => {
-                if (err) reject(err)
-                else resolve()
-            })
-        })
+        const p = path.join(electron.app.getPath("userData"), "Partitions", name)
+        this.log.info(`browser: clearing session persistance area: "${p}"`)
+        await rimraf(p)
         return true
     }
 }
-

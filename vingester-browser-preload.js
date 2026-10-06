@@ -17,20 +17,19 @@
 
     /*  require external modules  */
     const electron     = require("electron")
-    const log          = require("./vingester-log.js").scope(`browser/content-${cfg.id}`)
 
     /*  provide global Vingester environment (for postload)  */
     let visibility = cfg.D ? "visible" : "hidden"
     electron.contextBridge.exposeInMainWorld("vingester", {
         cfg,
         log (...args) {
-            log.info(...args)
+            electron.ipcRenderer.send("content-log", args)
         },
         stat (data) {
-            electron.ipcRenderer.sendTo(cfg.controlId, "stat", data)
+            electron.ipcRenderer.send("stat", data)
         },
         async audioCapture (data) {
-            electron.ipcRenderer.sendTo(cfg.workerId, "audio-capture", data)
+            electron.ipcRenderer.send("audio-capture", data)
         },
         visibility (state) {
             if (state !== undefined)
@@ -67,4 +66,3 @@
         })
     }
 })()
-

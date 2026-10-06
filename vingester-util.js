@@ -125,7 +125,7 @@ class AvailableDisplays {
                 w:  d.bounds.width,
                 h:  d.bounds.height,
                 s:  d.scaleFactor
-             }))
+            }))
             .sort((d1, d2) => d1.x - d2.x)
             .sort((d1, d2) => d1.y - d2.y)
             .map((d) => { d.num = i++; return d }))

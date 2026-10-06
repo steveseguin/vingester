@@ -6,7 +6,15 @@ The following is a detailed list of all changes to **Vingester** in
 reverse chronological order (newer first), grouped by the release
 versions and prefixed with the kind of change.
 
-- 3.0.0
+- 2.9.0
+    - UPGRADE: upgrade to Electron 44.5.1 and Chromium 152
+    - BUGFIX: restore audio capture, NDI output, previews, and status reporting with current Electron
+    - BUGFIX: prevent control-window stalls with multiple feed previews enabled
+    - BUGFIX: keep stop acknowledgements associated with their own browser when stopping multiple feeds
+    - BUGFIX: update context-menu clipboard actions for current Electron
+    - UPGRADE: update the Windows build tooling and native module builds
+
+- 3.0.0 (upstream development)
     - IMPROVEMENT: add HTTP API for remote start/reload/stop of all browsers or a particular browser
     - UPGRADE: upgrade to Electron 18.0.4
     - UPGRADE: upgrade to Electron-Builder 23.0.3
@@ -427,4 +435,3 @@ versions and prefixed with the kind of change.
     - BUGFIX:       fixed      functionality or appearance
     - REFACTORING:  refactored functionality or appearance
     - CLEANUP:      cleaned up functionality or appearance
-

@@ -189,17 +189,16 @@ const app = Vue.createApp({
         electron.ipcRenderer.on("tally", (ev, msg) => {
             this.tally[msg.id] = { status: msg.status, connections: msg.connections }
         })
-        electron.ipcRenderer.on("capture", async (ev, capture) => {
+        electron.ipcRenderer.on("capture", (ev, capture) => {
             const canvas = this.$refs[`canvas-${capture.id}`][0]
             const ctx = canvas.getContext("2d")
             const arr    = new Uint8ClampedArray(capture.buffer)
             const pixels = new ImageData(arr, capture.size.width, capture.size.height)
-            const bitmap = await createImageBitmap(pixels)
             ctx.clearRect(0, 0, 160, 90)
             if ((capture.size.width / capture.size.height) >= (160 / 90))
-                ctx.drawImage(bitmap, 0, Math.trunc((90 - capture.size.height) / 2))
+                ctx.putImageData(pixels, 0, Math.trunc((90 - capture.size.height) / 2))
             else
-                ctx.drawImage(bitmap, Math.trunc((160 - capture.size.width) / 2), 0)
+                ctx.putImageData(pixels, Math.trunc((160 - capture.size.width) / 2), 0)
         })
         electron.ipcRenderer.on("gpu", (ev, gpu) => {
             this.gpu = gpu
@@ -542,4 +541,3 @@ app.use(VueTippy, {
 })
 app.component("vue-select", VueNextSelect)
 app.mount("body")
-

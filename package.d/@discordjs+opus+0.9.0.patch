@@ -1,0 +1,12 @@
+diff --git a/node_modules/@discordjs/opus/package.json b/node_modules/@discordjs/opus/package.json
+--- a/node_modules/@discordjs/opus/package.json
++++ b/node_modules/@discordjs/opus/package.json
+@@ -49,7 +49,7 @@
+ 	},
+ 	"binary": {
+ 		"module_name": "opus",
+-		"module_path": "./prebuild/{node_abi}-napi-v{napi_build_version}-{platform}-{arch}-{libc}-{libc_version}/",
++		"module_path": "./prebuild/{node_abi}-napi-v{napi_build_version}-{platform}-{arch}-{libc}/",
+ 		"remote_path": "v{version}",
+ 		"package_name": "{module_name}-v{version}-{node_abi}-napi-v{napi_build_version}-{platform}-{arch}-{libc}-{libc_version}.tar.gz",
+ 		"host": "https://github.com/discordjs/opus/releases/download/",
