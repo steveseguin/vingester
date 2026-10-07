@@ -492,6 +492,7 @@ electron.app.on("ready", async () => {
         }
         saveConfigs(browsers)
         log.info(`imported browsers configuration (${browsers.length} browser entries)`)
+        return true
     }
     electron.ipcMain.handle("browsers-export", async (ev) => {
         electron.dialog.showSaveDialog({
@@ -521,8 +522,7 @@ electron.app.on("ready", async () => {
             if (result.canceled)
                 return
             if (result.filePaths && result.filePaths.length === 1) {
-                await importConfig(result.filePaths[0])
-                return true
+                return await importConfig(result.filePaths[0])
             }
             return false
         }).catch(() => {
