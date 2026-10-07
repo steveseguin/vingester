@@ -44,6 +44,8 @@ function setup (options = {}) {
             async showOpenDialog () {
                 if (dialog instanceof Error)
                     throw dialog
+                if (typeof dialog === "function")
+                    return dialog()
                 return dialog
             },
             async showSaveDialog () { return { canceled: true } }
@@ -85,6 +87,8 @@ function setup (options = {}) {
                 async readFile () {
                     if (options.failRead)
                         throw new Error("fixture read failure")
+                    if (typeof contents === "function")
+                        return contents()
                     return contents
                 },
                 async writeFile () {}
@@ -145,8 +149,7 @@ async function settle () {
         await Promise.resolve()
 }
 
-async function assertPreserved (options) {
-    const state = setup(options)
+async function assertPreserved (options, state = setup(options)) {
     const runtime = { ...state.api.browsers }
     const configs = state.ui.browsers
     const running = copy(state.ui.running)
@@ -159,6 +162,7 @@ async function assertPreserved (options) {
     assert.deepEqual(copy(state.ui.running), running)
     for (const id of Object.keys(runtime))
         assert.equal(state.api.browsers[id], runtime[id])
+    return state
 }
 
 for (const live of [ 0, 1, 2, 5 ])
@@ -239,3 +243,162 @@ test("successful import awaits the renderer reload", async () => {
     await pending
     assert.equal(finished, true)
 })
+
+for (const [ name, contents ] of [
+    [ "empty string", "\"\"" ],
+    [ "text scalar", "not a configuration" ],
+    [ "numeric scalar", "3" ],
+    [ "boolean scalar", "false" ],
+    [ "mapping instead of a list", "BrowserTitle: Imported" ],
+    [ "blank file", "" ],
+    [ "null entry", "- null" ],
+    [ "numeric entry", "- 3" ],
+    [ "boolean entry", "- false" ],
+    [ "text entry", "- text" ],
+    [ "nested list", "- []" ],
+    [ "timestamp entry", "- 2026-10-07" ],
+    [ "binary entry", "- !!binary YWJj" ],
+    [ "mixed valid and invalid entries", "- BrowserTitle: Imported\n- false" ]
+]) {
+    test(`invalid configuration shape (${name}) preserves all feeds`, () => assertPreserved({
+        dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] }, contents
+    }))
+}
+
+test("an explicit YAML null retains the existing empty-replacement behavior", async () => {
+    const state = setup({ dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] }, contents: "null" })
+    await state.ui.importBrowsers()
+    assert.equal(state.stops.length, 2)
+    assert.equal(state.ui.browsers.length, 0)
+    assert.deepEqual(state.getStored(), [])
+})
+
+test("repeated cancellation preserves the same runtime instances", async () => {
+    const state = setup()
+    for (let attempt = 0; attempt < 10; attempt++)
+        await assertPreserved({}, state)
+})
+
+for (const failure of [ "failRead", "failSave" ]) {
+    test(`a valid import can recover after ${failure}`, async () => {
+        const options = {
+            dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+            [failure]: true
+        }
+        const state = await assertPreserved(options)
+        options[failure] = false
+        await state.ui.importBrowsers()
+        assert.equal(state.stops.length, 2)
+        assert.equal(state.ui.browsers.length, 1)
+        assert.equal(state.ui.browsers[0].t, "Imported")
+        assert.deepEqual(state.getStored(), copy(state.ui.browsers))
+    })
+}
+
+test("invalid import then valid import replaces only after validation", async () => {
+    let contents = "- false"
+    const state = await assertPreserved({
+        dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+        contents: () => contents
+    })
+    contents = "- BrowserTitle: Recovered\n  InputURL: https://example.invalid/recovered"
+    await state.ui.importBrowsers()
+    assert.equal(state.stops.length, 2)
+    assert.equal(state.ui.browsers[0].t, "Recovered")
+    assert.deepEqual(state.getStored(), copy(state.ui.browsers))
+})
+
+test("pending file selection and interrupted reading leave feeds running", async () => {
+    let select
+    let failRead
+    const state = setup({
+        dialog: () => new Promise((resolve) => { select = resolve }),
+        contents: () => new Promise((resolve, reject) => { failRead = reject })
+    })
+    const runtime = { ...state.api.browsers }
+    const pending = state.ui.importBrowsers()
+    await settle()
+    assert.deepEqual(state.stops, [])
+    assert.deepEqual(state.getStored(), state.original)
+    select({ canceled: false, filePaths: [ "/fixture/config.yaml" ] })
+    await settle()
+    assert.deepEqual(state.stops, [])
+    assert.deepEqual(state.getStored(), state.original)
+    failRead(new Error("fixture interrupted read"))
+    await pending
+    assert.deepEqual(state.stops, [])
+    assert.deepEqual(state.getStored(), state.original)
+    assert.ok(!state.calls.some(([ name ]) => name === "browsers-load"))
+    for (const id of Object.keys(runtime))
+        assert.equal(state.api.browsers[id], runtime[id])
+})
+
+test("overlapping canceled imports do not prune or overwrite running feeds", async () => {
+    const selections = []
+    const state = setup({
+        dialog: () => new Promise((resolve) => { selections.push(resolve) })
+    })
+    const runtime = { ...state.api.browsers }
+    const first = state.ui.importBrowsers()
+    const second = state.ui.importBrowsers()
+    await settle()
+    selections[1]({ canceled: true })
+    await second
+    selections[0]({ canceled: true })
+    await first
+    assert.deepEqual(state.stops, [])
+    assert.deepEqual(state.getStored(), state.original)
+    assert.ok(!state.calls.some(([ name ]) => name === "browsers-load"))
+    for (const id of Object.keys(runtime))
+        assert.equal(state.api.browsers[id], runtime[id])
+})
+
+test("repeated successful imports replace the previous configuration", async () => {
+    let sequence = 0
+    const state = setup({
+        dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+        contents: () => `- BrowserTitle: Import ${++sequence}\n  InputURL: https://example.invalid/${sequence}`
+    })
+    for (let attempt = 1; attempt <= 5; attempt++) {
+        await state.ui.importBrowsers()
+        assert.equal(state.ui.browsers.length, 1)
+        assert.equal(state.ui.browsers[0].t, `Import ${attempt}`)
+        assert.deepEqual(state.getStored(), copy(state.ui.browsers))
+        assert.deepEqual(Object.keys(state.api.browsers), [ state.ui.browsers[0].id ])
+    }
+    assert.equal(state.stops.length, 2)
+})
+
+test("cancel after a successful import preserves the newly started feed", async () => {
+    let canceled = false
+    const state = setup({
+        dialog: () => ({ canceled, filePaths: [ "/fixture/config.yaml" ] })
+    })
+    await state.ui.importBrowsers()
+    const cfg = state.ui.browsers[0]
+    const browser = state.api.browsers[cfg.id]
+    browser.active = true
+    state.ui.running[cfg.id] = true
+    const stored = state.getStored()
+    canceled = true
+    await state.ui.importBrowsers()
+    assert.equal(state.stops.length, 2)
+    assert.equal(state.api.browsers[cfg.id], browser)
+    assert.equal(browser.running(), true)
+    assert.equal(state.ui.running[cfg.id], true)
+    assert.deepEqual(state.getStored(), stored)
+})
+
+for (const sample of [ "expert", "fps", "jitsi", "test", "vdon" ]) {
+    test(`the bundled ${sample} configuration remains importable`, async () => {
+        const state = setup({
+            dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+            contents: fs.readFileSync(path.join(sourceRoot, `cfg-sample-${sample}.yaml`), "utf8")
+        })
+        await state.ui.importBrowsers()
+        assert.equal(state.stops.length, 2)
+        assert.ok(state.ui.browsers.length > 0)
+        assert.equal(Object.keys(state.api.browsers).length, state.ui.browsers.length)
+        assert.deepEqual(state.getStored(), copy(state.ui.browsers))
+    })
+}

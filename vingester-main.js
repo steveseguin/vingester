@@ -471,6 +471,11 @@ electron.app.on("ready", async () => {
         }
         if (browsers === null)
             browsers = []
+        if (!Array.isArray(browsers) || browsers.some((browser) =>
+            Object.prototype.toString.call(browser) !== "[object Object]")) {
+            log.info("importing browsers configuration failed: expected a list of browser mappings")
+            return false
+        }
         for (const browser of browsers) {
             if (browser.id === undefined)
                 browser.id = new UUID(1).fold(2).map((num) =>
@@ -992,4 +997,5 @@ electron.app.on("ready", async () => {
 
     log.info("up and running")
 })
+
 
