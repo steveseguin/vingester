@@ -375,8 +375,9 @@ const app = Vue.createApp({
             await electron.ipcRenderer.invoke("browsers-export")
         },
         async importBrowsers () {
-            await electron.ipcRenderer.invoke("browsers-import")
-            this.load()
+            const imported = await electron.ipcRenderer.invoke("browsers-import")
+            if (imported === true)
+                await this.load()
         },
         async addBrowser () {
             const id = new UUID(1).fold(2).map((num) =>

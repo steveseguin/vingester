@@ -471,12 +471,19 @@ electron.app.on("ready", async () => {
         }
         if (browsers === null)
             browsers = []
+        if (!Array.isArray(browsers) || browsers.some((browser) =>
+            Object.prototype.toString.call(browser) !== "[object Object]")) {
+            log.info("importing browsers configuration failed: expected a list of browser mappings")
+            return false
+        }
         for (const browser of browsers) {
             if (browser.id === undefined)
                 browser.id = new UUID(1).fold(2).map((num) =>
                     num.toString(16).toUpperCase().padStart(2, "0")).join("")
             for (const field of fields) {
                 let value = browser[field.ename]
+                if (value === undefined)
+                    value = browser[field.iname]
                 if (value === undefined)
                     continue
                 if (field.itype === "boolean" && typeof value !== "boolean")
@@ -492,6 +499,7 @@ electron.app.on("ready", async () => {
         }
         saveConfigs(browsers)
         log.info(`imported browsers configuration (${browsers.length} browser entries)`)
+        return true
     }
     electron.ipcMain.handle("browsers-export", async (ev) => {
         electron.dialog.showSaveDialog({
@@ -521,8 +529,7 @@ electron.app.on("ready", async () => {
             if (result.canceled)
                 return
             if (result.filePaths && result.filePaths.length === 1) {
-                await importConfig(result.filePaths[0])
-                return true
+                return await importConfig(result.filePaths[0])
             }
             return false
         }).catch(() => {
@@ -992,4 +999,5 @@ electron.app.on("ready", async () => {
 
     log.info("up and running")
 })
+
 
