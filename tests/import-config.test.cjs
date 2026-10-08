@@ -402,3 +402,55 @@ for (const sample of [ "expert", "fps", "jitsi", "test", "vdon" ]) {
         assert.deepEqual(state.getStored(), copy(state.ui.browsers))
     })
 }
+
+/*  Internal field names survive sanitizeConfig, so they must receive the
+    same conversion as the exported names before persistence and reload.  */
+for (const field of [ "t", "i", "w", "h", "c", "z", "u", "k", "j", "q",
+    "Q", "x", "y", "A", "f", "O", "C", "o", "M" ]) {
+    for (const value of [ 1280, false, null, [ 1280 ], { value: 1280 } ]) {
+        test(`internal ${field} converts ${JSON.stringify(value)} before reload`, async () => {
+            const browser = { t: "Imported", u: "https://example.invalid/new", [field]: value }
+            const state = setup({
+                dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+                contents: jsYAML.dump([ browser ])
+            })
+            await state.ui.importBrowsers()
+            assert.equal(state.stops.length, 2)
+            assert.equal(state.ui.browsers.length, 1)
+            assert.equal(state.ui.browsers[0][field], String(value))
+            assert.deepEqual(state.getStored(), copy(state.ui.browsers))
+        })
+    }
+}
+
+for (const [ field, value, expected ] of [
+    [ "d", "1", 1 ], [ "r", "44100", 44100 ], [ "r", 48000, 48000 ],
+    [ "N", 0, false ], [ "N", 1, true ], [ "N", false, false ]
+]) {
+    test(`internal ${field} retains the established ${typeof expected} conversion of ${JSON.stringify(value)}`, async () => {
+        const state = setup({
+            dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+            contents: jsYAML.dump([ { [field]: value } ])
+        })
+        assert.equal(await state.api.importConfig("/fixture/config.yaml"), true)
+        assert.equal(state.getStored()[0][field], expected)
+        assert.deepEqual(state.stops, [])
+    })
+}
+
+test("external field names keep precedence over internal values", async () => {
+    const state = setup({
+        dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+        contents: "- BrowserWidth: 1024\n  w: {toString: 1}\n  Output2Enabled: false\n  N: true"
+    })
+    await state.ui.importBrowsers()
+    assert.equal(state.ui.browsers[0].w, "1024")
+    assert.equal(state.ui.browsers[0].N, false)
+    assert.deepEqual(state.getStored(), copy(state.ui.browsers))
+})
+
+test("failed internal field conversion preserves the previous feeds", () => assertPreserved({
+    dialog: { canceled: false, filePaths: [ "/fixture/config.yaml" ] },
+    contents: "- w: {toString: 1}"
+}))
+

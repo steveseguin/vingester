@@ -483,6 +483,8 @@ electron.app.on("ready", async () => {
             for (const field of fields) {
                 let value = browser[field.ename]
                 if (value === undefined)
+                    value = browser[field.iname]
+                if (value === undefined)
                     continue
                 if (field.itype === "boolean" && typeof value !== "boolean")
                     value = Boolean(value)
