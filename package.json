@@ -22,8 +22,8 @@
     "devDependencies": {
         "cross-env": "7.0.3",
         "cross-zip": "4.0.0",
-        "electron": "44.5.1",
-        "electron-builder": "26.15.3",
+        "electron": "44.10.0",
+        "electron-builder": "26.16.0",
         "electron-notarize": "^1.2.1",
         "eslint": "8.38.0",
         "eslint-config-standard": "17.0.0",
@@ -102,7 +102,7 @@
         },
         "mac": {
             "target": [
-              "zip"
+                "zip"
             ],
             "category": "com.engelschall.apps",
             "icon": "vingester-icon.png",
