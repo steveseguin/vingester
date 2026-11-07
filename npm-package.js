@@ -17,9 +17,15 @@ const PromptPW  = require("prompt-password")
 
 /*  establish asynchronous environment  */
 ;(async () => {
+    /*  ShellJS reports ordinary failures in its result instead of throwing.  */
+    const checkShell = (result) => {
+        if (result.code !== 0)
+            throw new Error(result.stderr)
+    }
+
     /*  remove previously generated files  */
     console.log("++ cleanup")
-    shell.rm("-rf", "dist")
+    checkShell(shell.rm("-rf", "dist"))
 
     /*  reduce the size of the development tree  */
     console.log("++ reducing source-tree")
@@ -28,7 +34,7 @@ const PromptPW  = require("prompt-password")
         .filter((path) => !path.match(/\/TypoPRO-SourceCodePro$/))
         .filter((path) => !path.match(/\/TypoPRO-Overlock$/))
     for (const file of remove)
-        shell.rm("-rf", file)
+        checkShell(shell.rm("-rf", file))
 
     /*  helper function for digitally signing distribution artifact  */
     const sign = async (zipfile) => {
@@ -78,7 +84,7 @@ const PromptPW  = require("prompt-password")
         /*  pack application into a distribution archive
             (notice: under macOS the ZIP DOES automatically use a top-level directory)  */
         console.log("++ packing App into ZIP distribution archive")
-        shell.mv("dist/mac/Vingester.app", "dist/Vingester.app")
+        checkShell(shell.mv("dist/mac/Vingester.app", "dist/Vingester.app"))
         zip.zipSync(
             path.join(__dirname, "dist/Vingester.app"),
             path.join(__dirname, `dist/Vingester-mac-${arch2}.zip`))
@@ -92,7 +98,7 @@ const PromptPW  = require("prompt-password")
 
         /*  pack application into a distribution archive  */
         console.log("++ packing App into ZIP distribution archive")
-        shell.mv("dist/Vingester-*.AppImage", "dist/Vingester")
+        checkShell(shell.mv("dist/Vingester-*.AppImage", "dist/Vingester"))
         zip.zipSync(
             path.join(__dirname, "dist/Vingester"),
             path.join(__dirname, `dist/Vingester-lnx-${arch2}.zip`))

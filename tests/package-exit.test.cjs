@@ -13,6 +13,10 @@ if (process.argv[2] === "--fixture") {
         if (name === failure)
             throw new Error(`fixture failure: ${name}`)
     }
+    const shellStep = (name, args) => {
+        step(name, args)
+        return { code: failure === `${name}-returned` ? 1 : 0, stderr: `fixture returned failure: ${name}` }
+    }
     const modules = {
         os: { platform: () => platform, arch: () => "x64", homedir: () => "/fixture-home" },
         fs: {
@@ -35,8 +39,8 @@ if (process.argv[2] === "--fixture") {
             }
         },
         shelljs: {
-            rm: (...args) => { step(args[1] === "dist" ? "cleanup" : "remove-font", args) },
-            mv: (...args) => { step("move", args) }
+            rm: (...args) => shellStep(args[1] === "dist" ? "cleanup" : "remove-font", args),
+            mv: (...args) => shellStep("move", args)
         },
         execa: { sync: (...args) => { step("build", args) } },
         "cross-zip": { zipSync: (...args) => { step("zip", args) } },
@@ -90,6 +94,15 @@ else {
             const suffix = { win32: "win", darwin: "mac", linux: "lnx" }[platform]
             assert.equal(archive, path.join("/fixture-project", `dist/Vingester-${suffix}-x64.zip`))
         })
+        const shellFailures = platform === "win32" ? [ "cleanup", "remove-font" ] : [ "cleanup", "remove-font", "move" ]
+        for (const failure of shellFailures) {
+            test(`${platform}: returned ${failure} error stops packaging`, () => {
+                const result = run(platform, `${failure}-returned`)
+                assert.equal(result.status, 1)
+                assert.equal(result.calls.at(-1).name, failure)
+                assert.ok(result.stdout.includes(`ERROR: Error: fixture returned failure: ${failure}`))
+            })
+        }
         for (const failure of [ "build", "zip" ]) {
             test(`${platform}: ${failure} failure exits nonzero`, () => {
                 const result = run(platform, failure)
