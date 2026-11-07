@@ -100,5 +100,6 @@ const PromptPW  = require("prompt-password")
     }
 })().catch((err) => {
     console.log(`** npm: package: ERROR: ${err}`)
+    process.exitCode = 1
 })
 
